@@ -1,0 +1,6 @@
+- name: "Prioridad alta por palabras clave"
+  when: "'demo' in (case.get('notes','').lower()) or 'urgente' in (case.get('notes','').lower())"
+  actions:
+    - "set_priority('Alta')"
+    - "assign('Equipo A')"
+    - "update_status('En evaluación')"

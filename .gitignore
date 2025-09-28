@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Entorno
+.env
+
+# Datos locales de demo
+data/
+n8n_data/
+
+# Docker
+*.log

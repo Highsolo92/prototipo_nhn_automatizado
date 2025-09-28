@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+openpyxl
+jinja2
+httpx
+python-multipart
+pyyaml
+apscheduler
+pytest
+ruff

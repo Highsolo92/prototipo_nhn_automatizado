@@ -1,0 +1,30 @@
+stages: [lint, test, build]
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+lint:
+  stage: lint
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt ruff
+    - ruff check app
+
+tests:
+  stage: test
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt pytest
+    - pytest -q
+
+build_image:
+  stage: build
+  image: docker:24
+  services: [docker:24-dind]
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - docker build -t registry.gitlab.com/<usuario>/<repo>:$CI_COMMIT_SHORT_SHA .
+  rules:
+    - if: $CI_COMMIT_BRANCH
