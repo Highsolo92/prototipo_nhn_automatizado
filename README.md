@@ -18,15 +18,18 @@
 ```mermaid
 flowchart LR
   A[Cliente / Swagger] -->|JSON| B(FastAPI)
+
   subgraph API
     B --> C[(SQLite)]
     B --> D[Excel\nopenpyxl]
     B --> E[SMTP\nMailhog]
-    B -->|POST JSON| F[/n8n Webhook/]
+    B --> F[/n8n Webhook/]
   end
+
   subgraph n8n
-    F --> G[Send Email (SMTP)]
-    F --> H[Google Sheets (opcional)]
-    F --> I[Slack/Discord (opcional)]
+    F --> G["Send Email (SMTP)"]
+    F --> H["Google Sheets (opcional)"]
+    F --> I["Slack/Discord (opcional)"]
   end
+
   E --> J[Mailhog UI]
