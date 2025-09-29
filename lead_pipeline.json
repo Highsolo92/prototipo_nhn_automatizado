@@ -1,0 +1,42 @@
+{
+  "name": "Lead pipeline",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "lead_created",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "demo@nhn.local",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=Lead recibido: {{$json.body.name}}",
+        "emailFormat": "html",
+        "html": "=<p>Hola {{$json.body.name}}, prioridad: {{$json.body.priority}}.</p>"
+      },
+      "id": "Send email",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "credentials": {
+        "smtp": { "id": "", "name": "SMTP account" }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Send email", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "pinData": {},
+  "meta": { "instanceId": "imported" }
+}
