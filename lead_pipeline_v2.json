@@ -1,0 +1,267 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead_created",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "da1e4a1b-cd0f-444d-9958-b2a9ffa7f383",
+      "name": "Webhook",
+      "webhookId": "9d8faf34-e06e-4140-8ea5-14136c62cffb"
+    },
+    {
+      "parameters": {
+        "fromEmail": "demo@nhn.local",
+        "toEmail": "=={{$json.body.email}}",
+        "subject": "==Lead recibido: {{$json.body.name}}",
+        "html": "==<p>Hola {{$json.body.name}}, prioridad: {{$json.body.priority}}.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        304,
+        0
+      ],
+      "id": "7e672572-4461-49c6-b7c3-f1b4fe69ee5e",
+      "name": "Send email",
+      "webhookId": "e0ea30ba-5e1e-4847-9f66-0f4cf08b6594",
+      "credentials": {
+        "smtp": {
+          "id": "ovT6NmVQMV88cpvr",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f51605c-fdea-48f5-abcd-40f14e1565c9",
+              "name": "={{ $json.body.name }}",
+              "value": "name",
+              "type": "string"
+            },
+            {
+              "id": "dc1bfc89-6248-4ae8-81c1-82c8691ba590",
+              "name": "=={{ $json.body.email }}",
+              "value": "email",
+              "type": "string"
+            },
+            {
+              "id": "38c9e88f-a801-4a5a-9311-9c75836e0df2",
+              "name": "=={{ $json.body.priority }}",
+              "value": "priority",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        -272
+      ],
+      "id": "eb50195b-9a2d-455c-a1b0-28ae58f57af3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AoKJsrC9fYjsPVsktMlKdF7dwBRZy1mpKV8QFBNtQU8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AoKJsrC9fYjsPVsktMlKdF7dwBRZy1mpKV8QFBNtQU8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $node[\"Webhook\"].json.body.id }}",
+            "created_at": "={{ $now.toFormat('yyyy-LL-dd HH:mm:ss') }}",
+            "name": "={{ $node[\"Webhook\"].json.body.name }}",
+            "email": "= {{ $node[\"Webhook\"].json.body.email }}",
+            "source": "={{ $node[\"Webhook\"].json.body.source }}",
+            "priority": "={{ $node[\"Webhook\"].json.body.priority }}",
+            "status": "={{ $node[\"Webhook\"].json.body.status }}",
+            "owner": "={{ $node[\"Webhook\"].json.body.owner }}",
+            "notes": "={{ $node[\"Webhook\"].json.body.notes }}"
+          },
+          "matchingColumns": [
+            "id, created_at, name, email, source, priority, status, owner, notes"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "=RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        0
+      ],
+      "id": "f93e12df-9268-4681-9ba9-b4af24ff3bc9",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "jr7kui7SubMmbWjg",
+          "name": "Google Service Account account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6fbc84d5-1995-4619-b01b-9dd20222bdee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1a5573a2800644b794b823c076a1df580b4971bd28eb594b78fe7706243ab710"
+  },
+  "id": "U9JOZzXcA7woTNkA",
+  "tags": []
+}
