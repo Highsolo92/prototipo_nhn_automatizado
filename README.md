@@ -1,40 +1,43 @@
-Prototipo NHN Automatizado
+# Prototipo NHN Automatizado
 
-Demo local para mostrar automatización de procesos con FastAPI + n8n + Mailhog + Google Sheets (opcional).
-Sirve para demostrar cómo orquestar eventos de negocio (alta de lead) y documentar el flujo de punta a punta.
+Demo local para mostrar **automatización de procesos** con **FastAPI** + **n8n** + **Mailhog** y (opcional) **Google Sheets**.  
+El caso de uso: cuando se crea un *lead*, se orquesta el flujo de notificación por email y registro en una planilla.
 
-La API expone POST /leads y envía el evento a n8n.
+---
 
-n8n envía un email (vía Mailhog) y registra el lead en Google Sheets.
+## 🧰 Stack / Hecho con
 
-Mailhog captura los correos para pruebas locales (sin enviar a internet).
+- **Python + FastAPI** — API de ejemplo (`POST /leads`).
+- **n8n (self-hosted)** — orquestación (Webhook → Email → Google Sheets).
+- **Mailhog** — SMTP de desarrollo (captura los emails en local).
+- **Google Sheets** (opcional) — “CRM” mínimo para registrar leads.
+- **Docker & Docker Compose** — todo corre en contenedores.
 
-Arquitectura
+---
+
+## 🔎 Arquitectura
+
+```mermaid
 flowchart LR
   A[Cliente / Swagger] -->|JSON| B(FastAPI)
 
   subgraph API
     B --> C[(SQLite)]
-    B --> D[Excel<br/>openpyxl]
-    B --> E[SMTP<br/>Mailhog]
+    B --> D[Excel / openpyxl]
+    B --> E[SMTP - Mailhog]
     B --> F[/n8n Webhook/]
   end
 
   subgraph n8n
     F --> G["Send Email (SMTP)"]
     F --> H["Google Sheets (Append)"]
-    F -.-> I["Slack/Discord (opcional)"]
+    F -.-> I["Slack / Discord (opcional)"]
   end
 
   E --> J[Mailhog UI]
-
-Requisitos
-
-Docker y Docker Compose
-
-(Opcional) Cuenta de Google para usar Google Sheets
-
-Estructura del proyecto
+📦 Estructura
+bash
+Copiar código
 .
 ├─ app/                     # FastAPI (endpoint /leads)
 ├─ data/                    # (opcional) archivos locales
@@ -45,101 +48,86 @@ Estructura del proyecto
 ├─ requirements.txt
 ├─ .env.example
 └─ README.md
+⚙️ Requisitos
+Docker y Docker Compose
 
-Variables de entorno
+(Opcional) Cuenta de Google si vas a usar Google Sheets
 
-Copiá el ejemplo y ajustá si lo necesitás:
+🚀 Puesta en marcha
+Variables de entorno (opcional):
 
+bash
+Copiar código
 cp .env.example .env
+Levantar servicios:
 
-
-El stack funciona out-of-the-box con los valores por defecto.
-
-Levantar el entorno
+bash
+Copiar código
 docker compose up -d --build
 docker compose ps
+URLs útiles:
 
+API (FastAPI) → http://localhost:8000 (Swagger en /docs)
 
-Servicios y URLs:
+n8n → http://localhost:5678
 
-API FastAPI: http://localhost:8000
- (Swagger en /docs)
+Mailhog (UI) → http://localhost:8025
 
-n8n: http://localhost:5678
+Primer uso de n8n: registrate con usuario/contraseña locales.
 
-Mailhog (UI): http://localhost:8025
-
-Primer acceso a n8n: registrate con usuario/contraseña locales.
-
-Importar el workflow en n8n
-
+🔄 Importar el workflow en n8n
 n8n → Workflows → Import from file.
 
-Elegí lead_pipeline.json (incluido en este repo).
+Importá lead_pipeline.json (incluido en este repo).
 
 Activate el workflow.
 
 Credencial SMTP (Mailhog)
+n8n → Credentials → New → SMTP
 
-Credentials → New → SMTP
+Host: mailhog
 
-Host: mailhog — Port: 1025 — User/Pass: vacío — SSL/TLS: apagado.
+Port: 1025
 
-Google Sheets (opcional pero recomendado)
-1) Crear la hoja
+User/Pass: vacío
 
-En Google Drive, crea una hoja llamada NHN Leads con estos encabezados en la fila 1 (idénticos):
+SSL/TLS: apagado
 
+Google Sheets (opcional)
+A) Service Account (recomendado)
+En Google Cloud: habilitá Google Sheets API y creá una Service Account (descargá la key JSON).
+
+n8n → Credentials → New → Google Service Account → pegá client_email y private_key (o el JSON entero).
+
+En tu hoja (ej. NHN Leads): Compartir con el client_email de la Service Account como Editor.
+
+Test de la credencial en n8n (OK).
+
+B) OAuth2 (tu usuario)
+Redirect URL: http://localhost:5678/rest/oauth2-credential/callback
+
+Scope: https://www.googleapis.com/auth/spreadsheets
+
+Hoja de ejemplo
+Creá una planilla con la fila 1 (encabezados exactos):
+
+bash
+Copiar código
 id, created_at, name, email, source, priority, status, owner, notes
-
-2) Credencial en n8n
-
-Opción A — Service Account (recomendada)
-
-Google Cloud Console → crea/usa un Proyecto.
-
-APIs & Services → Enable APIs → habilitá Google Sheets API.
-
-IAM & Admin → Service Accounts → Create → Add key (JSON).
-
-En n8n → Credentials → New → Google Service Account.
-
-Pegá client_email y private_key (o el JSON completo).
-
-Compartí la hoja con el client_email de la Service Account como Editor.
-
-Test en n8n (OK).
-
-Opción B — OAuth2 (tu usuario de Google)
-
-Google Cloud Console → OAuth consent screen (External) → agregate como Test user.
-
-Credentials → Create → OAuth client (Web):
-
-Authorized redirect URI:
-http://localhost:5678/rest/oauth2-credential/callback
-
-En n8n → Credentials → Google OAuth2 → pega Client ID/Secret.
-
-Scopes: https://www.googleapis.com/auth/spreadsheets
-
-Connect y Test.
-
-3) Configurar el nodo “Google Sheets → Append row in sheet”
-
+Nodo “Append row in sheet”
 Resource: Sheet Within Document
 
 Operation: Append Row
 
-Document: By ID (el ID entre /d/ y /edit en la URL)
+Document: By ID (el ID entre /d/ y /edit de la URL)
 
-Sheet: Hoja 1 (o el nombre que uses)
+Sheet: Hoja 1
 
-Mapping Column Mode: Map Each Column Manually
+Mapping: Map Each Column Manually
 
-Options → Cell Format: RAW ← (evita #ERROR! en Sheets)
+Options → Cell Format: RAW ← evita #ERROR! en Sheets
 
-Values to Send (usar Expression — sin = delante):
+Values to Send (usar Expression, sin = delante):
 
 Column	Value (Expression)
 id	{{ $json.body.id }}
@@ -152,68 +140,46 @@ status	{{ $json.body.status }}
 owner	{{ $json.body.owner }}
 notes	{{ $json.body.notes }}
 
-Si conectaste el nodo “Append row in sheet” después de “Send email”, referí al Webhook explícitamente, por ejemplo:
-{{ $node["Webhook"].json.body.name }}.
-Alternativa más simple: ramificá desde el Webhook hacia Send email y hacia Google Sheets.
+Si conectaste el nodo Sheets después de “Send email”, referí explícitamente al Webhook:
+{{ $node["Webhook"].json.body.name }} …(igual para cada campo).
+Alternativa limpia: ramificar desde el Webhook hacia Send email y Google Sheets.
 
-Probar el flujo
+✅ Probar el flujo
+Con el workflow activo:
 
-Con el workflow activado:
-
+bash
+Copiar código
 curl -X POST http://localhost:8000/leads \
   -H "Content-Type: application/json" \
   -d "{\"name\":\"Ana Test\",\"email\":\"ana@test.com\",\"source\":\"landing\",\"priority\":\"Alta\",\"status\":\"En evaluación\",\"owner\":\"Equipo A\",\"notes\":\"Quiero una demo urgente\"}"
+Deberías ver:
 
+n8n → Executions en verde,
 
-Verificá:
+Mailhog con el correo,
 
-n8n → Executions en verde
+Google Sheets con una fila nueva.
 
-Mailhog (UI): correo recibido
+🧯 Troubleshooting
+#ERROR! en Sheets → en el nodo: Options → Cell Format = RAW y usá expresiones sin =.
 
-Google Sheets: fila nueva con los datos
-
-Troubleshooting
-
-403 / permission en Sheets → compartí la hoja con el client_email de la Service Account (Editor).
-
-#ERROR! en celdas → en el nodo, Options → Cell Format = RAW y asegurate de usar expresiones sin =.
-
-Valores undefined → el nodo lee la salida de Send email (que no trae body).
+Valores undefined → el nodo lee la salida de Send email.
 
 Conectá Append row directo al Webhook, o
 
-Usá {{ $node["Webhook"].json.body.campo }} en cada columna.
+Usá {{ $node["Webhook"].json.body.campo }}.
 
-No coincide con encabezados → la fila 1 de la hoja debe llamarse exactamente como en la tabla.
+403 / permiso en Sheets → compartí la hoja con el client_email de la Service Account (Editor).
 
-redirect_uri_mismatch (OAuth2) → la Redirect URL en Google debe ser exactamente la de n8n.
+Encabezados → la fila 1 debe coincidir exacto con la tabla de arriba.
 
-The caller does not have permission → faltó compartir la hoja con el client_email.
+OAuth redirect_uri_mismatch → la Redirect URL debe ser exactamente la de n8n.
 
-Extensiones posibles
+🗺️ Roadmap / Extensiones
+Conectores WhatsApp / Telegram / Instagram para canales de entrada.
 
-WhatsApp / Telegram / Instagram (conector + webhook)
+Slack/Discord para alertas internas.
 
-Slack/Discord para alertas internas
+Persistencia en DB/CRM (Postgres, MySQL, HubSpot, etc.).
 
-Persistencia en DB/CRM (Postgres, MySQL, HubSpot, etc.)
-
-IA para clasificar prioridad de lead (OpenAI u otro proveedor)
-
-Comandos útiles
-
-Parar y limpiar:
-
-docker compose down
-
-
-Recrear solo n8n (si actualizás el workflow):
-
-docker compose restart n8n
-
-Changelog
-
-v0.2 — Agregado nodo Google Sheets (Append), guía de credenciales y Cell Format = RAW.
-
-v0.1 — Webhook → Send Email + Mailhog.
+Enriquecimiento con IA (clasificación de prioridad / routing inteligente).
