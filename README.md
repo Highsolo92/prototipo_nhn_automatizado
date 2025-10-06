@@ -35,9 +35,13 @@ flowchart LR
   end
 
   E --> J[Mailhog UI]
-📦 Estructura
-bash
-Copiar código
+```
+
+---
+
+## 📦 Estructura
+
+```
 .
 ├─ app/                     # FastAPI (endpoint /leads)
 ├─ data/                    # (opcional) archivos locales
@@ -48,141 +52,140 @@ Copiar código
 ├─ requirements.txt
 ├─ .env.example
 └─ README.md
-⚙️ Requisitos
-Docker y Docker Compose
+```
 
-(Opcional) Cuenta de Google si vas a usar Google Sheets
+---
 
-🚀 Puesta en marcha
-Variables de entorno (opcional):
+## ⚙️ Requisitos
 
-bash
-Copiar código
-cp .env.example .env
-Levantar servicios:
+- Docker y Docker Compose
+- (Opcional) Cuenta de Google si vas a usar **Google Sheets**
 
-bash
-Copiar código
-docker compose up -d --build
-docker compose ps
-URLs:
+---
 
-API (FastAPI) → http://localhost:8000 (Swagger en /docs)
+## 🚀 Puesta en marcha
 
-n8n → http://localhost:5678
+1. Variables de entorno (opcional):
+   ```bash
+   cp .env.example .env
+   ```
+2. Levantar servicios:
+   ```bash
+   docker compose up -d --build
+   docker compose ps
+   ```
+3. URLs:
+   - **API (FastAPI)** → http://localhost:8000  (Swagger en `/docs`)
+   - **n8n** → http://localhost:5678
+   - **Mailhog (UI)** → http://localhost:8025
 
-Mailhog (UI) → http://localhost:8025
+> Primer uso de **n8n**: registrate con usuario/contraseña locales.
 
-Primer uso de n8n: registrate con usuario/contraseña locales.
+---
 
-🔄 Importar el workflow en n8n
-n8n → Workflows → Import from file.
+## 🔄 Importar el workflow en n8n
 
-Elegí lead_pipeline.json (incluido en este repo).
+1. n8n → **Workflows** → **Import from file**.  
+2. Elegí `lead_pipeline.json` (incluido en este repo).  
+3. **Activate** el workflow.
 
-Activate el workflow.
+### Credencial SMTP (Mailhog)
 
-Credencial SMTP (Mailhog)
-n8n → Credentials → New → SMTP
+- n8n → **Credentials → New → SMTP**
+  - **Host**: `mailhog`
+  - **Port**: `1025`
+  - **User/Pass**: vacío
+  - **SSL/TLS**: apagado
 
-Host: mailhog
+---
 
-Port: 1025
+## 📊 Google Sheets (opcional)
 
-User/Pass: vacío
+### 1) Hoja de ejemplo
 
-SSL/TLS: apagado
+Creá una planilla con la **fila 1** (encabezados exactos):
 
-📊 Google Sheets (opcional)
-1) Hoja de ejemplo
-Creá una planilla con la fila 1 (encabezados exactos):
-
-bash
-Copiar código
+```
 id, created_at, name, email, source, priority, status, owner, notes
-2) Credencial en n8n
-A) Service Account (recomendada)
+```
 
-Google Cloud: habilitá Google Sheets API y creá una Service Account (descargá la key JSON).
+### 2) Credencial en n8n
 
-n8n → Credentials → New → Google Service Account → pegá client_email y private_key (o el JSON entero).
+**A) Service Account (recomendada)**  
+1. Google Cloud: habilitá **Google Sheets API** y creá una **Service Account** (descargá la **key JSON**).  
+2. n8n → **Credentials → New → Google Service Account** → pegá `client_email` y `private_key` (o el JSON entero).  
+3. **Compartí** la hoja con el `client_email` de esa Service Account como **Editor**.  
+4. **Test** en n8n (OK).
 
-Compartí la hoja con el client_email de esa Service Account como Editor.
+**B) OAuth2 (tu usuario)**  
+- Redirect URL: `http://localhost:5678/rest/oauth2-credential/callback`  
+- Scope: `https://www.googleapis.com/auth/spreadsheets`
 
-Test en n8n (OK).
+### 3) Nodo “Google Sheets → Append row in sheet”
 
-B) OAuth2 (tu usuario)
+- **Resource**: *Sheet Within Document*  
+- **Operation**: *Append Row*  
+- **Document**: *By ID* (el ID entre `/d/` y `/edit` en la URL)  
+- **Sheet**: `Hoja 1`  
+- **Mapping Column Mode**: *Map Each Column Manually*  
+- **Options → Cell Format**: **RAW**  ← (evita `#ERROR!` en Sheets)  
 
-Redirect URL: http://localhost:5678/rest/oauth2-credential/callback
+**Values to Send** (usá **Expression**, sin `=`):  
 
-Scope: https://www.googleapis.com/auth/spreadsheets
+| Columna     | Valor (Expression)                              |
+|-------------|--------------------------------------------------|
+| `id`        | ``{{ $json.body.id }}``                          |
+| `created_at`| ``{{ $now.toFormat('yyyy-LL-dd HH:mm:ss') }}``   |
+| `name`      | ``{{ $json.body.name }}``                        |
+| `email`     | ``{{ $json.body.email }}``                       |
+| `source`    | ``{{ $json.body.source }}``                      |
+| `priority`  | ``{{ $json.body.priority }}``                    |
+| `status`    | ``{{ $json.body.status }}``                      |
+| `owner`     | ``{{ $json.body.owner }}``                       |
+| `notes`     | ``{{ $json.body.notes }}``                       |
 
-3) Nodo “Google Sheets → Append row in sheet”
-Resource: Sheet Within Document
+> Si el nodo Sheets está **después** de “Send email”, referí explícitamente al Webhook:  
+> ``{{ $node["Webhook"].json.body.name }}`` (…igual para cada campo).  
+> Alternativa más limpia: **ramificar** desde el Webhook hacia *Send email* y *Google Sheets*.
 
-Operation: Append Row
+---
 
-Document: By ID (el ID entre /d/ y /edit en la URL)
+## ✅ Probar el flujo
 
-Sheet: Hoja 1
+Con el workflow **activo**:
 
-Mapping Column Mode: Map Each Column Manually
+```bash
+curl -X POST http://localhost:8000/leads   -H "Content-Type: application/json"   -d "{"name":"Ana Test","email":"ana@test.com","source":"landing","priority":"Alta","status":"En evaluación","owner":"Equipo A","notes":"Quiero una demo urgente"}"
+```
 
-Options → Cell Format: RAW ← (evita #ERROR! en Sheets)
-
-Values to Send (usá Expression, sin =):
-
-Columna	Valor (Expression)
-id	{{ $json.body.id }}
-created_at	{{ $now.toFormat('yyyy-LL-dd HH:mm:ss') }}
-name	{{ $json.body.name }}
-email	{{ $json.body.email }}
-source	{{ $json.body.source }}
-priority	{{ $json.body.priority }}
-status	{{ $json.body.status }}
-owner	{{ $json.body.owner }}
-notes	{{ $json.body.notes }}
-
-Si el nodo Sheets está después de “Send email”, referí explícitamente al Webhook:
-{{ $node["Webhook"].json.body.name }} (…igual para cada campo).
-Alternativa más limpia: ramificar desde el Webhook hacia Send email y Google Sheets.
-
-✅ Probar el flujo
-Con el workflow activo:
-
-bash
-Copiar código
-curl -X POST http://localhost:8000/leads \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"Ana Test\",\"email\":\"ana@test.com\",\"source\":\"landing\",\"priority\":\"Alta\",\"status\":\"En evaluación\",\"owner\":\"Equipo A\",\"notes\":\"Quiero una demo urgente\"}"
 Esperado:
+- **n8n → Executions** en verde  
+- **Mailhog** con el correo  
+- **Google Sheets** con la **nueva fila**  
 
-n8n → Executions en verde
+---
 
-Mailhog con el correo
+## 🧯 Troubleshooting
 
-Google Sheets con la nueva fila
+- **`#ERROR!` en Sheets** → en el nodo: **Options → Cell Format = RAW** y expresiones **sin `=`**.  
+- **Valores `undefined`** → el nodo lee la salida de *Send email*.  
+  - Conectá **Append row** directo al **Webhook**, o  
+  - Usá ``{{ $node["Webhook"].json.body.campo }}``.  
+- **403 / permiso en Sheets** → compartí la hoja con el `client_email` (Service Account) como **Editor**.  
+- **Encabezados** → la fila 1 debe coincidir **exacto**.  
+- **OAuth `redirect_uri_mismatch`** → la Redirect URL debe ser **exactamente** la de n8n.
 
-🧯 Troubleshooting
-#ERROR! en Sheets → en el nodo: Options → Cell Format = RAW y expresiones sin =.
+---
 
-Valores undefined → el nodo lee la salida de Send email.
+## 🗺️ Roadmap / Extensiones
 
-Conectá Append row directo al Webhook, o
+- Conectores **WhatsApp / Telegram / Instagram** (entrada de leads).  
+- **Slack/Discord** para alertas internas.  
+- Persistencia en **DB/CRM** (Postgres, MySQL, HubSpot, etc.).  
+- Enriquecimiento con **IA** (clasificación de prioridad / routing).
 
-Usá {{ $node["Webhook"].json.body.campo }}.
+---
 
-403 / permiso en Sheets → compartí la hoja con el client_email (Service Account) como Editor.
+## 📄 Licencia
 
-Encabezados → la fila 1 debe coincidir exacto.
-
-OAuth redirect_uri_mismatch → la Redirect URL debe ser exactamente la de n8n.
-
-🗺️ Roadmap / Extensiones
-Conectores WhatsApp / Telegram / Instagram (entrada de leads).
-
-Slack/Discord para alertas internas.
-
-Persistencia en DB/CRM (Postgres, MySQL, HubSpot, etc.).
-
-Enriquecimiento con IA (clasificación de prioridad / routing).
+**MIT** — ver `LICENSE`.
